@@ -1,5 +1,16 @@
 import 'package:flutter/material.dart';
-import '../main.dart'; // Importez le fichier main.dart pour accéder à la page d'accueil
+import '../main.dart';
+
+const List<String> produits = ['produit1', 'produit2', 'produit3', 'produit4', 'produit5'];
+
+const List<String> vendeurs = ['vendeur1', 'vendeur2', 'vendeur3'];
+
+class Vente {
+  final String produit;
+  final Map<String, int> ventes;
+
+  Vente(this.produit, this.ventes);
+}
 
 class VentesVendeurScreen extends StatefulWidget {
   final String username;
@@ -11,7 +22,6 @@ class VentesVendeurScreen extends StatefulWidget {
 }
 
 class _VentesVendeurScreenState extends State<VentesVendeurScreen> {
-  final List<String> produits = ['produit1', 'produit2', 'produit3', 'produit4', 'produit5'];
   final Map<String, Map<String, int>> ventes = {
     'produit1': {'vendeur1': 5, 'vendeur2': 0, 'vendeur3': 0},
     'produit2': {'vendeur1': 0, 'vendeur2': 0, 'vendeur3': 0},
@@ -23,26 +33,19 @@ class _VentesVendeurScreenState extends State<VentesVendeurScreen> {
   void _onLogout(BuildContext context) {
     Navigator.pushAndRemoveUntil(
       context,
-      MaterialPageRoute(builder: (context) => MyApp()), // Retour à la page d'accueil (main.dart)
-          (route) => false, // Supprime toutes les routes de la pile de navigation
+      MaterialPageRoute(builder: (context) => MyApp()),
+          (route) => false,
     );
   }
 
-  void _incrementVentes(String produit) {
+  void _updateVentes(String produit, int value) {
     setState(() {
-      ventes[produit]![widget.username] = (ventes[produit]![widget.username] ?? 0) + 1;
+      ventes[produit]![widget.username] = value < 0 ? 0 : value;
     });
   }
 
-  void _decrementVentes(String produit) {
-    setState(() {
-      if (ventes[produit]![widget.username] != null && ventes[produit]![widget.username]! > 0) {
-        ventes[produit]![widget.username] = ventes[produit]![widget.username]! - 1;
-      }
-    });
-  }
 
-  Color getBackgroundColor(String produit, String vendeur) {
+  Color getBackgroundColor(String produit) {
     int myVentes = ventes[produit]![widget.username] ?? 0;
     List<int> ventesList = ventes[produit]!.values.toList();
     ventesList.remove(ventes[produit]![widget.username]);
@@ -56,23 +59,8 @@ class _VentesVendeurScreenState extends State<VentesVendeurScreen> {
     }
   }
 
-
-  Map<String, int> calculateTotalForVendeur(String vendeur) {
-    Map<String, int> totalForVendeur = {};
-    for (var produit in produits) {
-      totalForVendeur[produit] = ventes[produit]![vendeur]!;
-    }
-    return totalForVendeur;
-  }
-
-  Map<String, int> calculateTotalForAllVendeurs() {
-    Map<String, int> totalForAllVendeurs = {};
-    for (var vendeur in ventes.values.first.keys) {
-      totalForAllVendeurs[vendeur] = ventes.values
-          .map<int>((vente) => vente[vendeur]!)
-          .reduce((value, element) => value + element);
-    }
-    return totalForAllVendeurs;
+  List<Vente> getVentesList() {
+    return produits.map((produit) => Vente(produit, ventes[produit]!)).toList();
   }
 
   @override
@@ -103,48 +91,48 @@ class _VentesVendeurScreenState extends State<VentesVendeurScreen> {
               columns: [
                 DataColumn(label: Text('Produit')),
                 DataColumn(label: Text('Ventes')),
-                for (var vendeur in ventes.values.first.keys)
+                for (var vendeur in vendeurs)
                   if (vendeur != widget.username) DataColumn(label: Text('$vendeur')),
               ],
               rows: [
-                for (var produit in produits)
+                for (var vente in getVentesList())
                   DataRow(
                     cells: [
-                      DataCell(Text(produit)),
+                      DataCell(Text(vente.produit)),
                       DataCell(
                         Container(
-                          color: getBackgroundColor(produit, widget.username),
+                          color: getBackgroundColor(vente.produit),
                           child: Row(
                             children: [
                               IconButton(
                                 icon: Icon(Icons.remove),
                                 onPressed: () {
-                                  _decrementVentes(produit);
+                                  _updateVentes(vente.produit, (ventes[vente.produit]![widget.username] ?? 0) - 1);
                                 },
                               ),
                               Expanded(
                                 child: Center(
                                   child: Text(
-                                    ventes[produit]![widget.username]?.toString() ?? '0',
+                                    ventes[vente.produit]![widget.username]?.toString() ?? '0',
                                   ),
                                 ),
                               ),
                               IconButton(
                                 icon: Icon(Icons.add),
                                 onPressed: () {
-                                  _incrementVentes(produit);
+                                  _updateVentes(vente.produit, (ventes[vente.produit]![widget.username] ?? 0) + 1);
                                 },
                               ),
                             ],
                           ),
                         ),
                       ),
-                      for (var vendeur in ventes[produit]!.keys)
+                      for (var vendeur in vendeurs)
                         if (vendeur != widget.username)
                           DataCell(
                             Center(
                               child: Text(
-                                ventes[produit]![vendeur].toString(),
+                                vente.ventes[vendeur].toString(),
                               ),
                             ),
                           ),
